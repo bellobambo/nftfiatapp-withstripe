@@ -1,95 +1,118 @@
+"use client";
+
 import Image from "next/image";
 import styles from "./page.module.css";
+import {
+  ConnectButton,
+  ConnectEmbed,
+  MediaRenderer,
+  useActiveAccount,
+  useReadContract,
+} from "thirdweb/react";
+import { client } from "./client";
+import { chain } from "./chain";
+import { getContractMetadata } from "thirdweb/extensions/common";
+import { contract } from "../../utils/contract";
+import { useState } from "react";
+import { loadStripe } from "@stripe/stripe-js";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const account = useActiveAccount();
+  const { data: contractMetaData } = useReadContract(getContractMetadata, {
+    contract: contract,
+  });
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+  const [clientSecret, setClientSecert] = useState<string>("");
+
+  if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+    throw "Did you forget to add a .env.local file?";
+  }
+
+  const stripe = loadStripe(
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY as string
+  );
+
+  if (!account) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          height: "100vh",
+          justifyContent: "center",
+        }}
+      >
+        <h1 style={{ marginBottom: "20px" }}>Strpe + Engine</h1>
+        <ConnectEmbed
+          client={client}
+          chain={chain}
+          showThirdwebBranding={false}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        height: "100vh",
+        justifyContent: "center",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "20px",
+          border: "1px solid #333",
+          borderRadius: "8px",
+        }}
+      >
+        <ConnectButton client={client} chain={chain} />
+        {contractMetaData && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "20px",
+              marginTop: "20px",
+            }}
           >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+            <MediaRenderer
+              client={client}
+              src={contractMetaData.image}
+              style={{
+                borderRadius: "5px",
+              }}
             />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
+          </div>
+        )}
+        {!clientSecret ? (
+          <button
+            style={{
+              marginTop: "20px",
+              padding: "1rem 2rem",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "royalblue",
+              width: "100%",
+              cursor: "pointer",
+            }}
           >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+            Buy With Credit Card
+          </button>
+        ) : (
+          <></>
+        )}
+      </div>
     </div>
   );
 }
